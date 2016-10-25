@@ -1,12 +1,10 @@
 // Copyright 2016 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
 
-package retry
+package retry // import "gopkg.in/retry.v1"
 
 import (
 	"time"
-
-	"github.com/juju/utils/clock"
 )
 
 // Regular represents a strategy that repeats at regular intervals.
@@ -34,7 +32,7 @@ type regularTimer struct {
 }
 
 // Start is short for Start(r, clk, nil)
-func (r Regular) Start(clk clock.Clock) *Attempt {
+func (r Regular) Start(clk Clock) *Attempt {
 	return Start(r, clk)
 }
 

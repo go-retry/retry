@@ -12,12 +12,10 @@
 //	}
 //
 // See examples for details of suggested usage.
-package retry
+package retry // import "gopkg.in/retry.v1"
 
 import (
 	"time"
-
-	"github.com/juju/utils/clock"
 )
 
 // Strategy is implemented by types that represent a retry strategy.
@@ -46,7 +44,7 @@ type Timer interface {
 
 // Attempt represents a running retry attempt.
 type Attempt struct {
-	clock clock.Clock
+	clock Clock
 	stop  <-chan struct{}
 	timer Timer
 
@@ -69,16 +67,16 @@ type Attempt struct {
 
 // Start begins a new sequence of attempts for the given strategy using
 // the given Clock implementation for time keeping. If clk is
-// nil, clock.WallClock will be used.
-func Start(strategy Strategy, clk clock.Clock) *Attempt {
+// nil, the time package will be used to keep time.
+func Start(strategy Strategy, clk Clock) *Attempt {
 	return StartWithCancel(strategy, clk, nil)
 }
 
 // StartWithCancel is like Start except that if a value
 // is received on stop while waiting, the attempt will be aborted.
-func StartWithCancel(strategy Strategy, clk clock.Clock, stop <-chan struct{}) *Attempt {
+func StartWithCancel(strategy Strategy, clk Clock, stop <-chan struct{}) *Attempt {
 	if clk == nil {
-		clk = clock.WallClock
+		clk = wallClock{}
 	}
 	now := clk.Now()
 	return &Attempt{

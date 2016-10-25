@@ -1,4 +1,4 @@
-package retry
+package retry // import "gopkg.in/retry.v1"
 
 import (
 	"time"

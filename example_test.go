@@ -1,10 +1,10 @@
-package retry_test
+package retry_test // import "gopkg.in/retry.v1"
 
 import (
 	"net/http"
 	"time"
 
-	"github.com/juju/utils/retry"
+	"gopkg.in/retry.v1"
 )
 
 func doSomething() (int, error) { return 0, nil }
