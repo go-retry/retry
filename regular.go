@@ -1,7 +1,7 @@
 // Copyright 2016 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
 
-package retry
+package retry // import "gopkg.in/retry.v1"
 
 import (
 	"time"

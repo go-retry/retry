@@ -1,7 +1,7 @@
 // Copyright 2011, 2012, 2013 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
 
-package retry_test
+package retry_test // import "gopkg.in/retry.v1"
 
 import (
 	"time"
@@ -10,7 +10,7 @@ import (
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils/clock"
-	"github.com/juju/utils/retry"
+	"gopkg.in/retry.v1"
 )
 
 type retrySuite struct{}
