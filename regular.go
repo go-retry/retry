@@ -57,8 +57,8 @@ func (a *regularTimer) NextSleep(now time.Time) (time.Duration, bool) {
 	if a.count < a.strategy.Min {
 		return sleep, true
 	}
-	// The next try is after the end - no more attempts.
-	if a.start.After(a.end) {
+	// The next try is not before the end - no more attempts.
+	if !a.start.Before(a.end) {
 		return 0, false
 	}
 	return sleep, true

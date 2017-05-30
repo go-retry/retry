@@ -297,6 +297,21 @@ func (*retrySuite) TestGapBetweenMoreAndNext(c *gc.C) {
 	c.Assert(clk.now.Sub(t0), gc.Equals, t0.Add(2*time.Second).Sub(t0))
 }
 
+func (*retrySuite) TestOnlyOneHitOnZeroTotal(c *gc.C) {
+	t0 := time.Now().UTC()
+	clk := &mockClock{
+		now: t0,
+	}
+	a := (&retry.Regular{
+		Total: 0,
+		Delay: 0,
+		Min:   0,
+	}).Start(clk)
+	// Even if the clock didn't advanced we want to have only one hit
+	c.Check(a.Next(), gc.Equals, true)
+	c.Check(a.More(), gc.Equals, false)
+}
+
 // closeTo reports whether d0 and d1 are close enough
 // to one another to cater for inaccuracies of floating point arithmetic.
 func closeTo(d0, d1 time.Duration) bool {
