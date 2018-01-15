@@ -214,6 +214,18 @@ var strategyTests = []strategyTest{{
 		{7e9, 8e9},
 	},
 }, {
+	about: "exponential retry with zero factor defaults to 2",
+	strategy: retry.Exponential{
+		Initial: 1e9,
+	},
+	calls: []nextCall{
+		{0, 0},
+		{0.1e9, 0.9e9},
+		{1e9, 2e9},
+		{3e9, 4e9},
+		{7e9, 8e9},
+	},
+}, {
 	about: "time-limited exponential retry",
 	strategy: retry.LimitTime(5e9, retry.Exponential{
 		Initial: 1e9,
@@ -265,6 +277,72 @@ func testStrategy(c *gc.C, test strategyTest) {
 		if ok {
 			c.Assert(a.Count(), gc.Equals, i+1)
 		}
+	}
+}
+
+func (*retrySuite) TestExponentialWithJitter(c *gc.C) {
+	// We use a stochastic test because we don't want
+	// to mock rand and have detailed dependence on
+	// the exact way it's used. We run the strategy many
+	// times and note the delays that we found; if the
+	// jitter is working, the delays should be roughly equally
+	// distributed and it shouldn't take long before all the
+	// buckets are hit.
+	const numBuckets = 8
+	tries := []struct {
+		max     time.Duration
+		buckets [numBuckets]int
+	}{{
+		max: 1e9,
+	}, {
+		max: 2e9,
+	}, {
+		max: 4e9,
+	}, {
+		max: 5e9,
+	}}
+	strategy := retry.Exponential{
+		Initial:  1e9,
+		Factor:   2,
+		MaxDelay: 5e9,
+		Jitter:   true,
+	}
+	count := 0
+	for i := 0; i < 10000 && count < len(tries)*numBuckets; i++ {
+		clk := &mockClock{
+			now: time.Now(),
+		}
+		t := clk.Now()
+		a := retry.Start(strategy, clk)
+		if !a.Next() {
+			c.Fatalf("no first try")
+		}
+		if clk.Now().Sub(t) != 0 {
+			c.Fatalf("first try was not immediate")
+		}
+		for try := 0; a.Next(); try++ {
+			if try >= len(tries) {
+				break
+			}
+			d := clk.Now().Sub(t)
+			t = clk.Now()
+			max := tries[try].max
+			if d > max {
+				c.Fatalf("try %d exceeded max %v; actual duration %v", try, tries[try].max, d)
+			}
+			slot := int(float64(d) / float64(max+1) * numBuckets)
+			if slot >= numBuckets || slot < 0 {
+				c.Fatalf("try %d slot %d out of range; d %v; max %v", try, slot, d, max)
+			}
+			buckets := &tries[try].buckets
+			if buckets[slot] == 0 {
+				count++
+			}
+			buckets[slot]++
+		}
+	}
+	if count < len(tries)*numBuckets {
+		c.Fatalf("distribution was not evenly spread; tries %#v", tries)
 	}
 }
 

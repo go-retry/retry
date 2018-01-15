@@ -1,13 +1,13 @@
 // Copyright 2016 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
 
-// Package retry provides a framework for retrying actions.
-// It does not itself invoke the action to be retried, but
-// is intended to be used in a retry loop.
+// Package retry implements flexible retry loops, including support for
+// channel cancellation, mocked time, and composable retry strategies
+// including exponential backoff with jitter.
 //
 // The basic usage is as follows:
 //
-//	for a := someStrategy.Start(); a.Next(); {
+//	for a := retry.Start(someStrategy, nil); a.Next(); {
 //		try()
 //	}
 //
