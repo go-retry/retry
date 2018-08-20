@@ -1,6 +1,7 @@
 module gopkg.in/retry.v1
 
 require (
+	github.com/juju/clock v0.0.0-20180808021310-bab88fc67299
 	github.com/juju/errors v0.0.0-20180726005433-812b06ada177 // indirect
 	github.com/juju/loggo v0.0.0-20180524022052-584905176618 // indirect
 	github.com/juju/retry v0.0.0-20160928201858-1998d01ba1c3 // indirect
