@@ -6,10 +6,9 @@ package retry_test // import "gopkg.in/retry.v1"
 import (
 	"time"
 
-	"github.com/juju/testing"
+	"github.com/juju/clock/testclock"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/clock"
 	"gopkg.in/retry.v1"
 )
 
@@ -89,7 +88,7 @@ func (*retrySuite) TestAttemptWithStop(c *gc.C) {
 }
 
 func (*retrySuite) TestAttemptWithLaterStop(c *gc.C) {
-	clock := testing.NewClock(time.Now())
+	clock := testclock.NewClock(time.Now())
 	stop := make(chan struct{})
 	done := make(chan struct{})
 	progress := make(chan struct{}, 10)
@@ -119,7 +118,7 @@ func (*retrySuite) TestAttemptWithLaterStop(c *gc.C) {
 }
 
 func (*retrySuite) TestAttemptWithMockClock(c *gc.C) {
-	clock := testing.NewClock(time.Now())
+	clock := testclock.NewClock(time.Now())
 	strategy := retry.Regular{
 		Delay: 5 * time.Second,
 		Total: 30 * time.Second,
@@ -402,7 +401,7 @@ func closeTo(d0, d1 time.Duration) bool {
 }
 
 type mockClock struct {
-	clock.Clock
+	retry.Clock
 
 	now   time.Time
 	sleep func(d time.Duration)
