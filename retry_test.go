@@ -4,19 +4,17 @@
 package retry_test // import "gopkg.in/retry.v1"
 
 import (
+	"testing"
 	"time"
 
-	"github.com/juju/clock/testclock"
-	gc "gopkg.in/check.v1"
+	"github.com/rogpeppe/clock/testclock"
+	qt "github.com/frankban/quicktest"
 
 	"gopkg.in/retry.v1"
 )
 
-type retrySuite struct{}
-
-var _ = gc.Suite(&retrySuite{})
-
-func (*retrySuite) TestAttemptTiming(c *gc.C) {
+func TestAttemptTiming(t *testing.T) {
+	c := qt.New(t)
 	testAttempt := retry.Regular{
 		Total: 0.25e9,
 		Delay: 0.1e9,
@@ -29,8 +27,8 @@ func (*retrySuite) TestAttemptTiming(c *gc.C) {
 		got = append(got, time.Now().Sub(t0))
 	}
 	got = append(got, time.Now().Sub(t0))
-	c.Assert(a.Stopped(), gc.Equals, false)
-	c.Assert(got, gc.HasLen, len(want))
+	c.Assert(a.Stopped(), qt.Equals, false)
+	c.Assert(got, qt.HasLen, len(want))
 	const margin = 0.01e9
 	for i, got := range want {
 		lo := want[i] - margin
@@ -41,34 +39,36 @@ func (*retrySuite) TestAttemptTiming(c *gc.C) {
 	}
 }
 
-func (*retrySuite) TestAttemptNextMore(c *gc.C) {
+func TestAttemptNextMore(t *testing.T) {
+	c := qt.New(t)
 	a := retry.Regular{}.Start(nil)
-	c.Assert(a.Next(), gc.Equals, true)
-	c.Assert(a.Next(), gc.Equals, false)
+	c.Assert(a.Next(), qt.Equals, true)
+	c.Assert(a.Next(), qt.Equals, false)
 
 	a = retry.Regular{}.Start(nil)
-	c.Assert(a.Next(), gc.Equals, true)
-	c.Assert(a.More(), gc.Equals, false)
-	c.Assert(a.Next(), gc.Equals, false)
+	c.Assert(a.Next(), qt.Equals, true)
+	c.Assert(a.More(), qt.Equals, false)
+	c.Assert(a.Next(), qt.Equals, false)
 
 	a = retry.Regular{Total: 2e8}.Start(nil)
-	c.Assert(a.Next(), gc.Equals, true)
-	c.Assert(a.More(), gc.Equals, true)
+	c.Assert(a.Next(), qt.Equals, true)
+	c.Assert(a.More(), qt.Equals, true)
 	time.Sleep(2e8)
-	c.Assert(a.More(), gc.Equals, true)
-	c.Assert(a.Next(), gc.Equals, true)
-	c.Assert(a.Next(), gc.Equals, false)
+	c.Assert(a.More(), qt.Equals, true)
+	c.Assert(a.Next(), qt.Equals, true)
+	c.Assert(a.Next(), qt.Equals, false)
 
 	a = retry.Regular{Total: 1e8, Min: 2}.Start(nil)
 	time.Sleep(1e8)
-	c.Assert(a.Next(), gc.Equals, true)
-	c.Assert(a.More(), gc.Equals, true)
-	c.Assert(a.Next(), gc.Equals, true)
-	c.Assert(a.More(), gc.Equals, false)
-	c.Assert(a.Next(), gc.Equals, false)
+	c.Assert(a.Next(), qt.Equals, true)
+	c.Assert(a.More(), qt.Equals, true)
+	c.Assert(a.Next(), qt.Equals, true)
+	c.Assert(a.More(), qt.Equals, false)
+	c.Assert(a.Next(), qt.Equals, false)
 }
 
-func (*retrySuite) TestAttemptWithStop(c *gc.C) {
+func TestAttemptWithStop(t *testing.T) {
+	c := qt.New(t)
 	stop := make(chan struct{})
 	close(stop)
 	done := make(chan struct{})
@@ -81,13 +81,14 @@ func (*retrySuite) TestAttemptWithStop(c *gc.C) {
 		for a.Next() {
 			c.Errorf("unexpected attempt")
 		}
-		c.Check(a.Stopped(), gc.Equals, true)
+		c.Check(a.Stopped(), qt.Equals, true)
 		close(done)
 	}()
 	assertReceive(c, done, "attempt loop abort")
 }
 
-func (*retrySuite) TestAttemptWithLaterStop(c *gc.C) {
+func TestAttemptWithLaterStop(t *testing.T) {
+	c := qt.New(t)
 	clock := testclock.NewClock(time.Now())
 	stop := make(chan struct{})
 	done := make(chan struct{})
@@ -101,7 +102,7 @@ func (*retrySuite) TestAttemptWithLaterStop(c *gc.C) {
 		for a.Next() {
 			progress <- struct{}{}
 		}
-		c.Check(a.Stopped(), gc.Equals, true)
+		c.Check(a.Stopped(), qt.Equals, true)
 		close(done)
 	}()
 	assertReceive(c, progress, "progress")
@@ -117,7 +118,8 @@ func (*retrySuite) TestAttemptWithLaterStop(c *gc.C) {
 	}
 }
 
-func (*retrySuite) TestAttemptWithMockClock(c *gc.C) {
+func TestAttemptWithMockClock(t *testing.T) {
+	c := qt.New(t)
 	clock := testclock.NewClock(time.Now())
 	strategy := retry.Regular{
 		Delay: 5 * time.Second,
@@ -251,14 +253,15 @@ var strategyTests = []strategyTest{{
 	terminates: true,
 }}
 
-func (*retrySuite) TestStrategies(c *gc.C) {
+func TestStrategies(t *testing.T) {
+	c := qt.New(t)
 	for i, test := range strategyTests {
 		c.Logf("test %d: %s", i, test.about)
 		testStrategy(c, test)
 	}
 }
 
-func testStrategy(c *gc.C, test strategyTest) {
+func testStrategy(c *qt.C, test strategyTest) {
 	t0 := time.Now()
 	clk := &mockClock{
 		now: t0,
@@ -269,17 +272,18 @@ func testStrategy(c *gc.C, test strategyTest) {
 		clk.now = t0.Add(call.t)
 		ok := a.Next()
 		expectTerminate := test.terminates && i == len(test.calls)-1
-		c.Assert(ok, gc.Equals, !expectTerminate)
+		c.Assert(ok, qt.Equals, !expectTerminate)
 		if got, want := clk.now.Sub(t0), call.t+call.sleep; !closeTo(got, want) {
 			c.Fatalf("incorrect time after Next; got %v want %v", got, want)
 		}
 		if ok {
-			c.Assert(a.Count(), gc.Equals, i+1)
+			c.Assert(a.Count(), qt.Equals, i+1)
 		}
 	}
 }
 
-func (*retrySuite) TestExponentialWithJitter(c *gc.C) {
+func TestExponentialWithJitter(t *testing.T) {
+	c := qt.New(t)
 	// We use a stochastic test because we don't want
 	// to mock rand and have detailed dependence on
 	// the exact way it's used. We run the strategy many
@@ -345,7 +349,8 @@ func (*retrySuite) TestExponentialWithJitter(c *gc.C) {
 	}
 }
 
-func (*retrySuite) TestGapBetweenMoreAndNext(c *gc.C) {
+func TestGapBetweenMoreAndNext(t *testing.T) {
+	c := qt.New(t)
 	t0 := time.Now().UTC()
 	clk := &mockClock{
 		now: t0,
@@ -354,27 +359,28 @@ func (*retrySuite) TestGapBetweenMoreAndNext(c *gc.C) {
 		Min:   3,
 		Delay: time.Second,
 	}).Start(clk)
-	c.Assert(a.Next(), gc.Equals, true)
-	c.Assert(clk.now, gc.Equals, t0)
+	c.Assert(a.Next(), qt.Equals, true)
+	c.Assert(clk.now, qt.Equals, t0)
 
 	clk.now = clk.now.Add(500 * time.Millisecond)
 	// Sanity check that the first iteration sleeps for half a second.
-	c.Assert(a.More(), gc.Equals, true)
-	c.Assert(a.Next(), gc.Equals, true)
-	c.Assert(clk.now.Sub(t0), gc.Equals, t0.Add(time.Second).Sub(t0))
+	c.Assert(a.More(), qt.Equals, true)
+	c.Assert(a.Next(), qt.Equals, true)
+	c.Assert(clk.now.Sub(t0), qt.Equals, t0.Add(time.Second).Sub(t0))
 
 	clk.now = clk.now.Add(500 * time.Millisecond)
-	c.Assert(a.More(), gc.Equals, true)
+	c.Assert(a.More(), qt.Equals, true)
 
 	// Add a delay between calling More and Next.
 	// Next should wait until the correct time anyway.
 	clk.now = clk.now.Add(250 * time.Millisecond)
-	c.Assert(a.More(), gc.Equals, true)
-	c.Assert(a.Next(), gc.Equals, true)
-	c.Assert(clk.now.Sub(t0), gc.Equals, t0.Add(2*time.Second).Sub(t0))
+	c.Assert(a.More(), qt.Equals, true)
+	c.Assert(a.Next(), qt.Equals, true)
+	c.Assert(clk.now.Sub(t0), qt.Equals, t0.Add(2*time.Second).Sub(t0))
 }
 
-func (*retrySuite) TestOnlyOneHitOnZeroTotal(c *gc.C) {
+func TestOnlyOneHitOnZeroTotal(t *testing.T) {
+	c := qt.New(t)
 	t0 := time.Now().UTC()
 	clk := &mockClock{
 		now: t0,
@@ -385,8 +391,8 @@ func (*retrySuite) TestOnlyOneHitOnZeroTotal(c *gc.C) {
 		Min:   0,
 	}).Start(clk)
 	// Even if the clock didn't advanced we want to have only one hit
-	c.Check(a.Next(), gc.Equals, true)
-	c.Check(a.More(), gc.Equals, false)
+	c.Check(a.Next(), qt.Equals, true)
+	c.Check(a.More(), qt.Equals, false)
 }
 
 // closeTo reports whether d0 and d1 are close enough
@@ -418,7 +424,7 @@ func (c *mockClock) Now() time.Time {
 	return c.now
 }
 
-func assertReceive(c *gc.C, ch <-chan struct{}, what string) {
+func assertReceive(c *qt.C, ch <-chan struct{}, what string) {
 	select {
 	case <-ch:
 	case <-time.After(time.Second):
